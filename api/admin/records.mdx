@@ -1,0 +1,128 @@
+---
+title: 'Manage records'
+description: 'Proxy endpoints for creating, listing, and deleting records in PocketBase collections'
+---
+
+These endpoints proxy record management operations to PocketBase. All four endpoints forward the PocketBase response status code and `Content-Type` directly to the caller.
+
+<Note>
+  When `pocketbase_admin` and `pocketbase_password` are configured in `config.json`, each request is automatically authenticated with a cached PocketBase admin token (refreshed every hour). See [List collections](/api/admin/collections) for details on how token caching works.
+</Note>
+
+---
+
+## List records
+
+`GET /api/collections/:collection/records`
+
+Returns a paginated list of records from the specified collection.
+
+### Parameters
+
+<ParamField path="collection" type="string" required>
+  The PocketBase collection name (e.g., `macky`, `capybaras`).
+</ParamField>
+
+<ParamField query="sort" type="string">
+  Sort order forwarded to PocketBase (e.g., `-created` for newest first).
+</ParamField>
+
+<ParamField query="page" type="string">
+  Page number forwarded to PocketBase. Defaults to PocketBase's own default if omitted.
+</ParamField>
+
+<ParamField query="perPage" type="string">
+  Number of records per page forwarded to PocketBase. Defaults to PocketBase's own default if omitted.
+</ParamField>
+
+### Example
+
+```bash
+curl "http://localhost:8080/api/collections/macky/records?sort=-created&page=1&perPage=20"
+```
+
+---
+
+## Create a record
+
+`POST /api/collections/:collection/records`
+
+Creates a new record in the specified collection. The proxy reconstructs the multipart form (including any uploaded files) and forwards it to PocketBase.
+
+<Warning>
+  The request body must be `multipart/form-data`. Sending JSON or `application/x-www-form-urlencoded` will cause the proxy to return `400 Bad Request` before forwarding anything to PocketBase.
+</Warning>
+
+### Parameters
+
+<ParamField path="collection" type="string" required>
+  The PocketBase collection name.
+</ParamField>
+
+<ParamField body="(fields)" type="string">
+  Any text fields accepted by the collection schema, sent as multipart form fields.
+</ParamField>
+
+<ParamField body="(file fields)" type="file">
+  File uploads attached as multipart form file parts. Used by the admin panel to upload new animal images.
+</ParamField>
+
+### Example
+
+```bash
+curl -X POST http://localhost:8080/api/collections/macky/records \
+  -F "name=Whiskers" \
+  -F "image=@/path/to/cat.jpg"
+```
+
+---
+
+## Delete a record
+
+`DELETE /api/collections/:collection/records/:id`
+
+Deletes the record with the given ID from the specified collection.
+
+### Parameters
+
+<ParamField path="collection" type="string" required>
+  The PocketBase collection name.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  The PocketBase record ID to delete.
+</ParamField>
+
+### Example
+
+```bash
+curl -X DELETE http://localhost:8080/api/collections/macky/records/RECORD_ID
+```
+
+---
+
+## Download a file
+
+`GET /api/files/:collection/:recordId/:filename`
+
+Downloads a file from a PocketBase collection record. This endpoint does not require admin authentication — files are served publicly.
+
+### Parameters
+
+<ParamField path="collection" type="string" required>
+  The PocketBase collection name.
+</ParamField>
+
+<ParamField path="recordId" type="string" required>
+  The ID of the record that owns the file.
+</ParamField>
+
+<ParamField path="filename" type="string" required>
+  The filename as stored in PocketBase.
+</ParamField>
+
+### Example
+
+```bash
+curl http://localhost:8080/api/files/macky/RECORD_ID/cat.jpg --output cat.jpg
+```

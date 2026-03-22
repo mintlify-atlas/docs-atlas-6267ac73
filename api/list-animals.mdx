@@ -1,0 +1,45 @@
+---
+title: 'List animals'
+description: 'Returns all available animal endpoints with their titles and descriptions'
+---
+
+`GET /api/animals`
+
+Returns an array of all registered animal endpoints. Use this to discover which animals are available and build dynamic UIs.
+
+## Parameters
+
+This endpoint takes no parameters.
+
+## Response
+
+<ResponseField name="[]">array of animal info objects</ResponseField>
+
+<ResponseField name="endpoint" type="string" required>
+  The URL slug used to access the animal. Use this as the path parameter for the image and count endpoints.
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Human-readable display name for the animal.
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Short description of the animal.
+</ResponseField>
+
+## Example
+
+```bash
+curl http://localhost:8080/api/animals
+```
+
+```json
+[
+  {"endpoint": "floppapi", "title": "Floppa Generator 3000", "description": "Klikni a uvidis zazrak!"},
+  {"endpoint": "macka", "title": "Macka (z epicke macka databaze)", "description": "Originalna macka z databazy!"},
+  {"endpoint": "capybara", "title": "Capybara", "description": "OK I pull up"},
+  {"endpoint": "hyrax", "title": "Hyrax", "description": "Rock-dwelling cuteness"},
+  {"endpoint": "manul", "title": "Manul", "description": "Floofy Pallas's cat energy"},
+  {"endpoint": "rabbit", "title": "Rabbits", "description": "Bouncy bunny pics"}
+]
+```

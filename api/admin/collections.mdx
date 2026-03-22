@@ -1,0 +1,37 @@
+---
+title: 'List collections'
+description: 'Proxies to PocketBase to list all available collections'
+---
+
+`GET /api/collections`
+
+Forwards the request to PocketBase's `/api/collections` endpoint and returns the response directly. Use this to discover which collections exist in the connected PocketBase instance.
+
+<Note>
+  When `pocketbase_admin` and `pocketbase_password` are set in `config.json`, the proxy automatically authenticates with PocketBase and attaches an admin token to the forwarded request. Without admin credentials, the request is forwarded unauthenticated and only public collections are returned.
+</Note>
+
+## Parameters
+
+This endpoint takes no parameters.
+
+## Token caching
+
+The proxy caches the PocketBase admin token in memory and reuses it for up to 1 hour (`tokenExpiry = time.Hour`). When the token expires, the proxy re-authenticates with PocketBase using the credentials from `config.json` before forwarding the next request. The cached token is stored in the `pbToken` variable and protected by a mutex (`pbTokenMu`) for concurrent access.
+
+## Response
+
+The response body and `Content-Type` header are forwarded directly from PocketBase. The HTTP status code from PocketBase is passed through unchanged.
+
+### Error responses
+
+| Status | Cause |
+|--------|-------|
+| `502 Bad Gateway` | PocketBase is unreachable |
+| `500` | Internal error creating or reading the request |
+
+## Example
+
+```bash
+curl http://localhost:8080/api/collections
+```

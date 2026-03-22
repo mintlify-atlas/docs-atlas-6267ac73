@@ -1,0 +1,64 @@
+---
+title: "Introduction"
+description: "Floppa API — serve random animal images with a simple HTTP GET request"
+---
+
+# Floppa API
+
+Floppa API is a lightweight Go REST API that returns random animal images on demand. Hit an endpoint, get a JPEG. That's it.
+
+The API currently serves six animal collections: floppa, cats (macka), capybara, hyrax, manul, and rabbits. Each animal gets two endpoints — one for a random image, one for the total count. A Svelte frontend and admin panel are bundled in the same binary.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get the API running locally in under five minutes
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Set up your PocketBase connection and credentials
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/list-animals">
+    Browse all available endpoints with request and response examples
+  </Card>
+  <Card title="Adding Animals" icon="paw-print" href="/guides/adding-animals">
+    Extend the API with new animal collections
+  </Card>
+</CardGroup>
+
+## How it works
+
+Each animal is registered as an `AnimalConfig` in `backend/main.go`. When a request hits `GET /{animal}`, the handler calls `GetRandomImage` on the animal's backend — either a local directory or a PocketBase collection.
+
+```
+Client  →  GET /capybara
+           ↓
+        AnimalHandler.GetRandomImage()
+           ↓
+        PocketBaseAnimal  (or LocalAnimal)
+           ↓
+        Returns image/jpeg bytes + increments view counter
+```
+
+### Animal backends
+
+| Backend | Source | Use case |
+|---|---|---|
+| `LocalAnimal` | Files on disk | Floppa images bundled in the container |
+| `PocketBaseAnimal` | PocketBase collection | All other animals; supports view tracking |
+
+### Available animals
+
+| Endpoint | Title | Backend |
+|---|---|---|
+| `/floppapi` | Floppa Generator 3000 | Local filesystem |
+| `/macka` | Macka | PocketBase (`macky`) |
+| `/capybara` | Capybara | PocketBase (`capybaras`) |
+| `/hyrax` | Hyrax | PocketBase (`hyraxes`) |
+| `/manul` | Manul | PocketBase (`manuls`) |
+| `/rabbit` | Rabbits | PocketBase (`rabbits`) |
+
+## Stack
+
+- **Backend**: Go 1.24, [Gin](https://github.com/gin-gonic/gin) HTTP framework
+- **Database**: [PocketBase](https://pocketbase.io) for image storage and records
+- **Frontend**: Svelte + Vite, bundled into the Go binary at build time
+- **Container**: Multi-stage Docker build, single binary output

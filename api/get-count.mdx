@@ -1,0 +1,40 @@
+---
+title: 'Get image count'
+description: 'Returns the total number of images available for the specified animal'
+---
+
+`GET /{animal}/count`
+
+Returns the total number of images available in the collection for the given animal.
+
+## Parameters
+
+<ParamField path="animal" type="string" required>
+  The animal endpoint slug (e.g., `floppapi`, `macka`, `capybara`, `hyrax`, `manul`, `rabbit`). See [Get random image](/api/get-random-image) for the full list.
+</ParamField>
+
+## Response
+
+<ResponseField name="count" type="integer" required>
+  Total number of images available for the animal.
+</ResponseField>
+
+<Note>
+  For `floppapi` (a `LocalAnimal`), the count reflects the number of image files in the local directory. For all other animals (`PocketBaseAnimal`), the count comes from the `totalItems` field returned by PocketBase.
+</Note>
+
+### Error responses
+
+| Status | Body | Cause |
+|--------|------|-------|
+| `500` | `{"error": "..."}` | Failed to read directory or query PocketBase |
+
+## Example
+
+```bash
+curl http://localhost:8080/capybara/count
+```
+
+```json
+{"count": 42}
+```

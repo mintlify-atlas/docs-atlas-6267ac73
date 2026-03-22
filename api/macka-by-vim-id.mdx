@@ -1,0 +1,41 @@
+---
+title: 'Get macka by VIM ID'
+description: 'Returns a random macka image filtered by VIM ID — designed for iOS Shortcuts'
+---
+
+`GET /macka/vim/:vimId`
+
+Returns a random macka image filtered to records that match the given VIM ID. This endpoint was designed specifically for iOS Shortcuts integration.
+
+## Parameters
+
+<ParamField path="vimId" type="string" required>
+  The VIM ID to filter by. The endpoint queries the `macky` PocketBase collection with the filter `vimId='{vimId}'` and returns a random matching record.
+</ParamField>
+
+## Response
+
+The response body is raw JPEG binary data.
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `image/jpeg` |
+| `Cache-Control` | `no-cache, no-store, must-revalidate` |
+| `Pragma` | `no-cache` |
+| `Expires` | `0` |
+
+### Error responses
+
+| Status | Body | Cause |
+|--------|------|-------|
+| `500` | `{"error": "..."}` | No records found for the given `vimId`, or image download failed |
+
+<Warning>
+  If no macka records match the provided `vimId`, the API returns a `500` error. Make sure the `vimId` exists in the `macky` collection before calling this endpoint.
+</Warning>
+
+## Example
+
+```bash
+curl "http://localhost:8080/macka/vim/your-vim-id" --output macka.jpg
+```

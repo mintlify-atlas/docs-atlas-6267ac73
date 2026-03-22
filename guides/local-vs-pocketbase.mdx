@@ -1,0 +1,149 @@
+---
+title: "Local vs PocketBase animals"
+description: "Choose the right animal backend for your use case"
+---
+
+Floppa API supports two backends for serving animal images. Both implement the same `Animal` interface, so swapping between them only requires changing the `animalConfigs` entry in `main.go`.
+
+## The Animal interface
+
+All animal backends implement this interface from `backend/animals/animals.go`:
+
+```go
+type Animal interface {
+    GetRandomImage(ctx context.Context) ([]byte, error)
+    GetCount(ctx context.Context) (int, error)
+    GetName() string
+}
+```
+
+- `GetRandomImage` — returns the raw bytes of a randomly selected image
+- `GetCount` — returns the total number of available images
+- `GetName` — returns the animal's name string
+
+## LocalAnimal
+
+`LocalAnimal` reads images from a directory on the local filesystem.
+
+```go
+type LocalAnimal struct {
+    Name      string
+    Directory string
+}
+```
+
+**How it works:** On each request, `GetRandomImage` reads the configured directory, filters for files with supported extensions, and picks one at random using `rand.Intn`:
+
+```go
+func (a *LocalAnimal) GetRandomImage(ctx context.Context) ([]byte, error) {
+    files, err := os.ReadDir(a.Directory)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read %s directory: %w", a.Name, err)
+    }
+
+    var imageFiles []string
+    for _, file := range files {
+        if !file.IsDir() && isImageFile(file.Name()) {
+            imageFiles = append(imageFiles, file.Name())
+        }
+    }
+
+    if len(imageFiles) == 0 {
+        return nil, fmt.Errorf("no image files found in %s directory", a.Name)
+    }
+
+    randomIndex := rand.Intn(len(imageFiles))
+    selectedImage := imageFiles[randomIndex]
+
+    return os.ReadFile(filepath.Join(a.Directory, selectedImage))
+}
+```
+
+<Note>
+  Supported image formats: `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.webp`. Files with any other extension are silently ignored.
+</Note>
+
+**Pros:**
+- Zero external dependencies
+- Works offline
+- Fastest response time — no network calls
+
+**Cons:**
+- Images must be bundled in the Docker image or mounted as a volume
+- No view tracking
+- Adding or removing images requires rebuilding the container (unless using a volume mount)
+
+## PocketBaseAnimal
+
+`PocketBaseAnimal` fetches images from a [PocketBase](https://pocketbase.io) collection over HTTP.
+
+```go
+type PocketBaseAnimal struct {
+    Name           string
+    CollectionName string
+    PocketBaseURL  string
+}
+```
+
+**How it works:** On each request, `GetRandomImage` calls the PocketBase records API with `sort=@random` to fetch a random record, then downloads the image file from the files API:
+
+```go
+func (a *PocketBaseAnimal) GetRandomImage(ctx context.Context) ([]byte, error) {
+    client := &http.Client{Timeout: 10 * time.Second}
+
+    req, err := http.NewRequestWithContext(ctx, "GET",
+        fmt.Sprintf("%s/api/collections/%s/records?perPage=1&sort=@random", a.PocketBaseURL, a.CollectionName), nil)
+    // ...
+
+    // Update views in background
+    go a.updateViews(record.ID, record.Views)
+
+    // Download image
+    req, err = http.NewRequestWithContext(ctx, "GET",
+        fmt.Sprintf("%s/api/files/%s/%s/%s", a.PocketBaseURL, a.CollectionName, record.ID, record.Image), nil)
+    // ...
+
+    return io.ReadAll(resp.Body)
+}
+```
+
+**View tracking:** After serving an image, `updateViews` runs in a goroutine to increment the `views` field on the record via a `PATCH` request. This happens asynchronously and does not block the response.
+
+<Tip>
+  Because view tracking is asynchronous, a failed PATCH only logs an error server-side — the image response is never affected.
+</Tip>
+
+**Pros:**
+- Images stored externally — no container rebuild needed to add or remove images
+- View counter tracking per record
+- Collections can be updated through the PocketBase admin UI
+
+**Cons:**
+- Requires a running PocketBase instance
+- Adds network latency on every request
+- 10-second HTTP timeout applies to both the records API and the image download
+
+## Comparison
+
+| Dimension | `LocalAnimal` | `PocketBaseAnimal` |
+|---|---|---|
+| Storage | Local disk / container image | PocketBase collection |
+| View tracking | No | Yes (async) |
+| Image updates | Requires container rebuild or volume remount | Admin UI, no rebuild needed |
+| Offline support | Yes | No — requires PocketBase |
+| Docker setup | `COPY` directory or mount a volume | Set `POCKETBASE_URL` env var |
+| Response time | Fastest (disk read only) | Slower (two HTTP requests) |
+
+## When to use each
+
+Use **`LocalAnimal`** when:
+- Your image set is fixed and ships with the application
+- You want the simplest possible setup with no external dependencies
+- You're running in an environment without outbound network access
+
+Use **`PocketBaseAnimal`** when:
+- Your image collection changes over time and you want to update it without rebuilding
+- You need per-image view tracking
+- You already have PocketBase running as part of your stack
+
+All current animals except `floppapi` use `PocketBaseAnimal`. The `floppapi` endpoint uses `LocalAnimal` with the `./floppa` directory bundled in the container.

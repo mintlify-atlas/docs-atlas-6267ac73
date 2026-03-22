@@ -1,0 +1,57 @@
+---
+title: 'Get random image'
+description: 'Returns a random image for the specified animal as a JPEG binary'
+---
+
+`GET /{animal}`
+
+Returns a random image for the given animal as a raw JPEG binary. Call this endpoint directly in an `<img>` tag or download the file with curl.
+
+## Parameters
+
+<ParamField path="animal" type="string" required>
+  The animal endpoint slug. Must be one of the registered animals.
+
+  | Slug | Title |
+  |------|-------|
+  | `floppapi` | Floppa Generator 3000 |
+  | `macka` | Macka (z epicke macka databaze) |
+  | `capybara` | Capybara |
+  | `hyrax` | Hyrax |
+  | `manul` | Manul |
+  | `rabbit` | Rabbits |
+</ParamField>
+
+## Response
+
+The response body is raw JPEG binary data.
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `image/jpeg` |
+| `Cache-Control` | `no-cache, no-store, must-revalidate` |
+| `Pragma` | `no-cache` |
+| `Expires` | `0` |
+
+<Note>
+  For PocketBase-backed animals (`macka`, `capybara`, `hyrax`, `manul`, `rabbit`), the view counter for the selected record is incremented asynchronously after the image is returned. This does not affect response time.
+</Note>
+
+### Error responses
+
+| Status | Body | Cause |
+|--------|------|-------|
+| `500` | `{"error": "..."}` | Image fetch or download failed |
+
+## Examples
+
+```bash
+# Get a random floppa image
+curl http://localhost:8080/floppapi --output floppa.jpg
+
+# Get a random capybara image
+curl http://localhost:8080/capybara --output capybara.jpg
+
+# Get a random manul image
+curl http://localhost:8080/manul --output manul.jpg
+```

@@ -1,0 +1,108 @@
+---
+title: 'Docker deployment'
+description: 'Deploy Floppa API with Docker or Docker Compose'
+---
+
+<Note>
+  The Dockerfile uses a three-stage build: a frontend builder (`oven/bun:1-alpine`) that compiles the frontend with Bun, a backend builder (`golang:1.24-alpine`) that compiles the Go binary, and a final minimal `alpine:latest` image that contains only the compiled artifacts.
+</Note>
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed
+- [Docker Compose](https://docs.docker.com/compose/install/) installed
+- A `config.json` file created at `./backend/config.json` (see [Configuration](/configuration))
+
+## Quick start with Docker Compose
+
+<Warning>
+  You must create `./backend/config.json` before running `docker-compose up`. The file is mounted read-only into the container. If the file does not exist, the container will fail to start.
+</Warning>
+
+<Steps>
+  <Step title="Create config.json">
+    Copy the example config and fill in your PocketBase credentials:
+
+    ```bash
+    cp backend/config.json.example backend/config.json
+    ```
+
+    Edit `backend/config.json` with your values:
+
+    ```json
+    {
+      "pocketbase_url": "http://localhost:8080",
+      "pocketbase_admin": "admin@example.com",
+      "pocketbase_password": "your_password"
+    }
+    ```
+  </Step>
+
+  <Step title="Start the service">
+    From the root of the repository, run:
+
+    ```bash
+    docker-compose up -d
+    ```
+
+    Docker builds the image and starts the container in the background.
+  </Step>
+
+  <Step title="Verify it's running">
+    The API is available at `http://localhost:8080`.
+
+    ```bash
+    curl http://localhost:8080/api/animals
+    ```
+  </Step>
+</Steps>
+
+## docker-compose.yml
+
+The full `docker-compose.yml` used in the quick start:
+
+```yaml
+version: "3.8"
+
+services:
+  floppa-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/config.json:/app/config.json:ro
+    restart: unless-stopped
+    environment:
+      - GIN_MODE=release
+```
+
+- `GIN_MODE=release` suppresses Gin's debug output for production use.
+- The config file is mounted at `/app/config.json` as read-only (`ro`).
+- `restart: unless-stopped` keeps the container running after reboots.
+
+## Building the image manually
+
+To build the Docker image without Compose:
+
+```bash
+docker build -t floppa-api .
+```
+
+## Running with docker run
+
+To run the image directly:
+
+```bash
+docker run -p 8080:8080 -v $(pwd)/backend/config.json:/app/config.json:ro floppa-api
+```
+
+Add `-e GIN_MODE=release` for production:
+
+```bash
+docker run -p 8080:8080 \
+  -v $(pwd)/backend/config.json:/app/config.json:ro \
+  -e GIN_MODE=release \
+  floppa-api
+```

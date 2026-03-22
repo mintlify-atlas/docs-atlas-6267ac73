@@ -1,0 +1,101 @@
+---
+title: "Configuration"
+description: "Configure Floppa API with your PocketBase instance"
+---
+
+## config.json
+
+Floppa API reads its configuration from a `config.json` file at startup. The file contains three fields:
+
+```json
+{
+  "pocketbase_url": "http://localhost:8090",
+  "pocketbase_admin": "admin@example.com",
+  "pocketbase_password": "your_password"
+}
+```
+
+<Warning>
+  `config.json` must exist and be valid JSON before the server starts. If the file is missing from all search paths, the server will exit immediately with a fatal error.
+</Warning>
+
+### Fields
+
+<ParamField path="pocketbase_url" type="string" required>
+  The base URL of your PocketBase instance, without a trailing slash. Used for all collection API calls and file downloads.
+
+  Example: `http://localhost:8090`
+</ParamField>
+
+<ParamField path="pocketbase_admin" type="string" required>
+  The email address of the PocketBase admin account. Used to authenticate the admin proxy endpoints under `/api/collections`.
+
+  Example: `admin@example.com`
+</ParamField>
+
+<ParamField path="pocketbase_password" type="string" required>
+  The password for the PocketBase admin account.
+
+  Example: `your_password`
+</ParamField>
+
+## Config file search paths
+
+At startup, the server tries the following paths in order and uses the first one it finds:
+
+1. `/config.json` — absolute path, useful for containers
+2. `config.json` — relative to the working directory
+3. `./config.json` — explicit relative path
+
+When running locally with `go run .` from the `backend/` directory, place `config.json` inside `backend/`. When running in Docker, mount the file to `/config.json` inside the container (see [Docker setup](#docker-setup) below).
+
+## PocketBase setup
+
+Most animal endpoints pull images from PocketBase collections. You need to create the following collections in your PocketBase instance:
+
+| Collection | Endpoint |
+|---|---|
+| `macky` | `/macka` |
+| `capybaras` | `/capybara` |
+| `hyraxes` | `/hyrax` |
+| `manuls` | `/manul` |
+| `rabbits` | `/rabbit` |
+
+Each collection must have the following fields on every record:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | PocketBase record ID (auto-generated) |
+| `image` | file | The image file stored in PocketBase |
+| `views` | number | View counter, incremented on each request |
+
+When a request hits `GET /{animal}`, the handler fetches a random record from the corresponding collection, downloads the image file from PocketBase, and increments the `views` field in the background.
+
+<Info>
+  The `/floppapi` endpoint uses a `LocalAnimal` backend and reads images from the `./floppa` directory on disk. It does not require PocketBase or any collection setup.
+</Info>
+
+## Docker setup
+
+The `config.json` file is not baked into the Docker image. You must mount it at runtime. The included `docker-compose.yml` shows the recommended approach:
+
+```yaml
+services:
+  floppa-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/config.json:/app/config.json:ro
+    restart: unless-stopped
+    environment:
+      - GIN_MODE=release
+```
+
+The volume mount `./backend/config.json:/app/config.json:ro` places your local config file at `/app/config.json` inside the container. Because the server checks `/config.json` as an absolute path first, this path is found on the first attempt.
+
+<Tip>
+  Set `GIN_MODE=release` in production to disable debug logging and enable Gin's optimized request handling.
+</Tip>
