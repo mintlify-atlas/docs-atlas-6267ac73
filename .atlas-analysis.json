@@ -1,0 +1,72 @@
+{
+  "projectType": "api-service",
+  "projectName": "Floppa API",
+  "projectDescription": "A Go-based REST API that serves random animal images (cats, floppa, capybara, and more) backed by PocketBase, with a Svelte frontend and admin panel.",
+  "theme": "palm",
+  "primaryColor": "#FF6B35",
+  "lightColor": "#FFF4EE",
+  "darkColor": "#1A0A00",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart", "configuration"]
+          },
+          {
+            "group": "Deployment",
+            "pages": ["deployment/docker", "deployment/self-hosting"]
+          },
+          {
+            "group": "Extending",
+            "pages": ["guides/adding-animals", "guides/local-vs-pocketbase"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Animals",
+            "pages": [
+              "api/list-animals",
+              "api/get-random-image",
+              "api/get-count",
+              "api/macka-by-vim-id"
+            ]
+          },
+          {
+            "group": "Admin Proxy",
+            "pages": [
+              "api/admin/collections",
+              "api/admin/records"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Random animal image endpoints for cats, floppa, capybara, hyrax, manul, and rabbits",
+    "PocketBase integration for remote image storage with automatic view tracking",
+    "Local filesystem image serving via LocalAnimal for self-hosted collections",
+    "Built-in PocketBase admin proxy with token-based authentication",
+    "Svelte frontend with admin panel for managing animal collections",
+    "Docker-based deployment with multi-stage builds",
+    "CORS-enabled API for cross-origin browser access",
+    "iOS Shortcuts support via VIM ID-filtered macka endpoint"
+  ],
+  "publicApiSurface": [
+    "GET /api/animals",
+    "GET /{animal}",
+    "GET /{animal}/count",
+    "GET /macka/vim/:vimId",
+    "GET /api/collections",
+    "GET /api/collections/:collection/records",
+    "POST /api/collections/:collection/records",
+    "DELETE /api/collections/:collection/records/:id",
+    "GET /api/files/:collection/:recordId/:filename"
+  ]
+}
