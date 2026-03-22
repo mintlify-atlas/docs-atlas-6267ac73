@@ -131,7 +131,7 @@ func (a *PocketBaseAnimal) GetRandomImage(ctx context.Context) ([]byte, error) {
 | View tracking | No | Yes (async) |
 | Image updates | Requires container rebuild or volume remount | Admin UI, no rebuild needed |
 | Offline support | Yes | No — requires PocketBase |
-| Docker setup | `COPY` directory or mount a volume | Set `POCKETBASE_URL` env var |
+| Docker setup | `COPY` directory or mount a volume | Set `pocketbase_url` in `config.json` |
 | Response time | Fastest (disk read only) | Slower (two HTTP requests) |
 
 ## When to use each

@@ -99,3 +99,29 @@ The volume mount `./backend/config.json:/app/config.json:ro` places your local c
 <Tip>
   Set `GIN_MODE=release` in production to disable debug logging and enable Gin's optimized request handling.
 </Tip>
+
+## Frontend environment variables
+
+The Svelte frontend uses Vite build-time environment variables. These are set before building the frontend, not at runtime.
+
+### VITE_ADMIN_PASSWORD
+
+The admin panel at `/admin` is protected by a client-side password check. Set `VITE_ADMIN_PASSWORD` in a `.env` file inside the `frontend/` directory before building:
+
+```bash frontend/.env
+VITE_ADMIN_PASSWORD=your_admin_password
+```
+
+<Warning>
+  This password is embedded into the compiled frontend JavaScript at build time. It is not a secure server-side secret. Do not use a password you rely on for other services.
+</Warning>
+
+If `VITE_ADMIN_PASSWORD` is not set, the admin panel will accept any password (the check will compare against `undefined`). Set it explicitly for any deployment where you want to restrict admin access.
+
+To rebuild the frontend after setting the variable:
+
+```bash
+cd frontend
+bun install
+bun run build
+```

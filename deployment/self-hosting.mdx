@@ -15,7 +15,7 @@ You can run Floppa API as a native binary on any Linux or macOS server. This app
 
 <Steps>
   <Step title="Build the frontend">
-    From the repository root, install dependencies and build the frontend:
+    From the repository root, install dependencies and build the Svelte frontend:
 
     ```bash
     cd frontend
@@ -23,7 +23,7 @@ You can run Floppa API as a native binary on any Linux or macOS server. This app
     bun run build
     ```
 
-    This outputs static files to `frontend/dist/`. The backend serves this directory at startup.
+    This outputs static files to `frontend/dist/` (relative to the repo root).
   </Step>
 
   <Step title="Build the backend">
@@ -34,21 +34,21 @@ You can run Floppa API as a native binary on any Linux or macOS server. This app
     go build -o floppa-api .
     ```
 
-    This produces a `floppa-api` binary in the `backend/` directory.
+    This produces a `floppa-api` binary inside `backend/`.
   </Step>
 
   <Step title="Create config.json">
-    Create `config.json` in the same directory as the binary. The binary searches for the config file at `/config.json`, `config.json`, and `./config.json` in that order.
+    Create `config.json` in the `backend/` directory (where the binary lives). The binary searches for the config file at `/config.json`, `config.json`, and `./config.json` in that order.
 
     ```bash
-    cp config.json.example config.json
+    cp backend/config.json.example backend/config.json
     ```
 
-    Edit `config.json` with your PocketBase connection details:
+    Edit `backend/config.json` with your PocketBase connection details:
 
     ```json
     {
-      "pocketbase_url": "http://localhost:8080",
+      "pocketbase_url": "http://your-pocketbase-host:8090",
       "pocketbase_admin": "admin@example.com",
       "pocketbase_password": "your_password"
     }
@@ -56,19 +56,26 @@ You can run Floppa API as a native binary on any Linux or macOS server. This app
   </Step>
 
   <Step title="Run the binary">
-    Start the server from the `backend/` directory:
+    Run the binary from the **repository root** so that the relative path `./frontend/dist` resolves correctly:
 
     ```bash
-    GIN_MODE=release ./floppa-api
+    GIN_MODE=release ./backend/floppa-api
     ```
 
     The API listens on port `8080`. The frontend is served from `./frontend/dist`.
+
+    <Note>
+      The binary serves `./frontend/dist` relative to the directory it is run from. Always run from the repository root, or place the binary alongside a `frontend/dist/` directory in your deployment directory.
+    </Note>
   </Step>
 </Steps>
 
 ## Production setup with systemd
 
-For a persistent production deployment, create a systemd service unit. This example assumes the repository is deployed to `/opt/floppa-api`.
+For a persistent production deployment, create a systemd service unit. This example assumes:
+- The repository (or a copy of it) is deployed to `/opt/floppa-api`
+- The compiled binary is at `/opt/floppa-api/backend/floppa-api`
+- The built frontend is at `/opt/floppa-api/frontend/dist/`
 
 Create the file `/etc/systemd/system/floppa-api.service`:
 
@@ -80,7 +87,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/floppa-api
-ExecStart=/opt/floppa-api/floppa-api
+ExecStart=/opt/floppa-api/backend/floppa-api
 Environment=GIN_MODE=release
 Restart=always
 RestartSec=5
@@ -104,7 +111,7 @@ sudo systemctl status floppa-api
 ```
 
 <Note>
-  Set `WorkingDirectory` to the directory containing both the `floppa-api` binary and the `frontend/` folder. The binary serves `./frontend/dist` relative to its working directory.
+  Set `WorkingDirectory` to the directory that contains the `frontend/dist/` folder. The binary serves `./frontend/dist` relative to the working directory — not relative to the binary itself.
 </Note>
 
 ## Environment variables
